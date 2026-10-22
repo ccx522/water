@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#fff3f8">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="喝水小助手">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>喝水小助手</title>
+<style>
+  :root{
+    --pink:#ff8fb1;
+    --pink-deep:#ff6f9c;
+    --pink-soft:#ffd9e6;
+    --mint:#7fd8c8;
+    --ink:#3f3a4a;
+    --ink-soft:#8c8697;
+    --line:#ffe1ec;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0;
+    padding:calc(24px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right)) calc(40px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left));
+    min-height:100vh;
+    color:var(--ink);
+    font-family:"PingFang SC","Microsoft YaHei","Hiragino Sans GB",system-ui,-apple-system,"Segoe UI",sans-serif;
+    background:
+      radial-gradient(1100px 560px at 8% -12%, #ffe4ef 0%, rgba(255,228,239,0) 62%),
+      radial-gradient(900px 520px at 102% -4%, #dff6f1 0%, rgba(223,246,241,0) 58%),
+      linear-gradient(165deg,#fffafc 0%, #f5fbfa 52%, #fdf6ff 100%);
+    background-attachment:fixed;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:700px;margin:0 auto}
+
+  .hero{text-align:center;padding:4px 0 16px}
+  .hello{font-size:26px;font-weight:600;letter-spacing:.5px}
+  .hello .wave-hand{display:inline-block;animation:swing 2.6s ease-in-out infinite}
+  .sub{margin-top:6px;font-size:13px;color:var(--ink-soft)}
+
+  .card{
+    background:rgba(255,255,255,.82);
+    border:1px solid rgba(255,255,255,.9);
+    border-radius:26px;
+    padding:22px;
+    margin-bottom:14px;
+    box-shadow:0 12px 32px rgba(255,150,190,.16), 0 2px 8px rgba(120,120,150,.05);
+    backdrop-filter:blur(10px);
+  }
+  .card h2{
+    margin:0 0 14px;
+    font-size:15px;
+    font-weight:600;
+    color:var(--ink);
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .card h2::before{
+    content:"";
+    width:6px;height:16px;border-radius:6px;
+    background:linear-gradient(180deg,var(--pink),var(--mint));
+  }
+  .muted{color:var(--ink-soft);font-weight:400;font-size:12px}
+
+  .ring-wrap{position:relative;width:236px;height:236px;margin:2px auto 10px}
+  .ring{width:100%;height:100%;transform:rotate(-90deg);display:block}
+  .ring-track{fill:none;stroke:#ffe6ef;stroke-width:13}
+  .ring-fill{
+    fill:none;stroke:url(#waterGrad);stroke-width:13;stroke-linecap:round;
+    stroke-dasharray:540.4;stroke-dashoffset:540.4;
+    transition:stroke-dashoffset .7s cubic-bezier(.22,1,.36,1);
+  }
+  .glass{
+    position:absolute;inset:29px;border-radius:50%;overflow:hidden;
+    background:linear-gradient(180deg,#fffbfd,#ffffff);
+    box-shadow:inset 0 0 0 1px rgba(255,196,219,.75);
+  }
+  .water{
+    position:absolute;left:0;right:0;bottom:0;height:0%;
+    background:linear-gradient(180deg,rgba(255,190,214,.92),rgba(255,143,177,.95) 55%,rgba(250,126,166,.98));
+    transition:height .7s cubic-bezier(.22,1,.36,1);
+  }
+  .wave{
+    position:absolute;left:-50%;width:200%;height:22px;top:-11px;
+    background:rgba(255,255,255,.55);
+    border-radius:45%;
+  }
+  .wave-a{animation:waveMove 7s linear infinite;opacity:.75}
+  .wave-b{animation:waveMove 11s linear infinite reverse;opacity:.45;top:-15px}
+  .bubbles{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+  .bubbles i{
+    position:absolute;bottom:-14px;width:9px;height:9px;border-radius:50%;
+    background:rgba(255,255,255,.75);
+    animation:rise linear infinite;
+  }
+  .glass-center{
+    position:absolute;inset:0;z-index:3;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+  }
+  .count{font-size:38px;font-weight:700;line-height:1;letter-spacing:-.5px}
+  .count .slash{color:rgba(63,58,74,.35);font-weight:400;margin:0 2px;font-size:28px}
+  .count #cupsGoal{color:var(--ink-soft);font-weight:500;font-size:28px}
+  .unit{font-size:12px;color:var(--ink-soft);margin-top:4px}
+  .mlLine{margin-top:6px;font-size:12px;color:var(--ink-soft)}
+
+  .status{text-align:center;font-size:14px;color:var(--ink);min-height:22px;margin:4px 0 16px}
+  .status.win{color:#e0568b;font-weight:600}
+
+  .actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+  .btn{
+    font-family:inherit;font-size:14px;font-weight:500;
+    padding:11px 18px;border-radius:999px;border:1px solid #ffdcea;
+    background:#fff;color:var(--ink);cursor:pointer;
+    transition:transform .15s ease, box-shadow .2s ease, background .2s ease;
+  }
+  .btn:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(255,150,190,.22)}
+  .btn:active{transform:translateY(0) scale(.98)}
+  .btn.primary{
+    border:none;color:#fff;font-size:15px;padding:13px 24px;
+    background:linear-gradient(135deg,#ff9ec4,#ff7fab 55%,#ff9dbe);
+    box-shadow:0 8px 22px rgba(255,130,175,.38);
+  }
+  .btn.ghost{background:transparent;border-color:#ffe1ec;color:var(--ink-soft)}
+  .btn.ghost:hover{color:var(--pink-deep);border-color:#ffc9dd}
+
+  .row{display:flex;gap:12px;flex-wrap:wrap}
+  .field{flex:1 1 150px;display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--ink-soft)}
+  select{
+    font-family:inherit;font-size:14px;color:var(--ink);
+    padding:10px 12px;border-radius:14px;border:1px solid #ffdcea;background:#fff;
+    cursor:pointer;
+  }
+  select:focus-visible, .btn:focus-visible, input:focus-visible{outline:2px solid #ffb3ce;outline-offset:2px}
+
+  .toggles{display:flex;gap:24px;flex-wrap:wrap;margin-top:16px}
+  .switch{display:inline-flex;align-items:center;gap:10px;font-size:14px;cursor:pointer}
+  .switch input{
+    appearance:none;-webkit-appearance:none;margin:0;
+    width:44px;height:26px;border-radius:999px;background:#ffe0ec;
+    position:relative;cursor:pointer;transition:background .22s ease;
+  }
+  .switch input::after{
+    content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;
+    border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(180,120,150,.35);
+    transition:transform .22s cubic-bezier(.22,1.2,.36,1);
+  }
+  .switch input:checked{background:linear-gradient(135deg,#ffa8c9,#7fd8c8)}
+  .switch input:checked::after{transform:translateX(18px)}
+
+  .next{margin-top:16px;font-size:13px;color:var(--ink-soft);text-align:center}
+
+  .log{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+  .log li{
+    display:flex;align-items:center;gap:10px;
+    background:#fff;border-radius:15px;padding:10px 13px;font-size:14px;
+    box-shadow:0 2px 10px rgba(255,170,200,.12);
+    animation:slideIn .35s cubic-bezier(.22,1,.36,1);
+  }
+  .log li .drop{font-size:15px}
+  .log li .when{margin-left:auto;color:var(--ink-soft);font-size:12px}
+  .empty{font-size:13px;color:var(--ink-soft);text-align:center;padding:6px 0}
+  .empty[hidden]{display:none}
+
+  .tip{text-align:center;font-size:12px;color:var(--ink-soft);margin:18px 0 0;line-height:1.7}
+
+  .overlay{
+    position:fixed;inset:0;z-index:60;padding:20px;
+    display:flex;align-items:center;justify-content:center;
+    background:rgba(92,70,92,.26);backdrop-filter:blur(4px);
+    animation:fadeIn .2s ease;
+  }
+  .overlay[hidden]{display:none}
+  .dialog{
+    width:100%;max-width:330px;text-align:center;
+    background:#fff;border-radius:28px;padding:26px 22px 22px;
+    box-shadow:0 24px 70px rgba(150,90,130,.3);
+    animation:pop .38s cubic-bezier(.22,1.25,.36,1);
+  }
+  .dialog .big-drop{font-size:44px;line-height:1;animation:bounce 1.8s ease-in-out infinite}
+  .dialog h3{margin:12px 0 8px;font-size:19px}
+  .dialog p{margin:0 0 20px;font-size:14px;color:var(--ink-soft);line-height:1.7}
+  .dialog .actions{gap:8px}
+
+  .petals{position:fixed;inset:0;pointer-events:none;z-index:70;overflow:hidden}
+  .petals span{
+    position:absolute;top:-30px;font-size:18px;
+    animation:fall linear forwards;
+  }
+
+  @keyframes waveMove{from{transform:translateX(0)}to{transform:translateX(25%)}}
+  @keyframes rise{0%{transform:translateY(0);opacity:0}20%{opacity:.9}100%{transform:translateY(-190px);opacity:0}}
+  @keyframes pop{from{transform:scale(.86);opacity:0}to{transform:scale(1);opacity:1}}
+  @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+  @keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+  @keyframes swing{0%,100%{transform:rotate(0)}20%{transform:rotate(16deg)}40%{transform:rotate(-8deg)}60%{transform:rotate(10deg)}}
+  @keyframes slideIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+  @keyframes fall{to{transform:translateY(105vh) rotate(340deg);opacity:.1}}
+
+  @media (max-width:520px){
+    .hello{font-size:21px}
+    .ring-wrap{width:206px;height:206px;margin-top:4px}
+    .count{font-size:33px}
+    .count #cupsGoal,.count .slash{font-size:25px}
+    .card{padding:18px;border-radius:22px}
+    .actions{gap:8px}
+    .actions .btn{flex:1 1 auto}
+    .btn{min-height:46px;padding:12px 16px}
+    .btn.primary{min-height:50px;padding:14px 22px}
+    select{min-height:46px}
+    .switch input{width:48px;height:28px}
+    .switch input::after{width:22px;height:22px}
+    .switch input:checked::after{transform:translateX(20px)}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{animation:none !important;transition:none !important}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <div class="hello" id="greeting">今天也要好好喝水 <span class="wave-hand">🌷</span></div>
+    <div class="sub" id="todayLine"></div>
+  </header>
+
+  <section class="card">
+    <div class="ring-wrap">
+      <svg class="ring" viewBox="0 0 200 200" aria-hidden="true">
+        <defs>
+          <linearGradient id="waterGrad" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#ffa8c9"/>
+            <stop offset="55%" stop-color="#ff7fab"/>
+            <stop offset="100%" stop-color="#7fd8c8"/>
+          </linearGradient>
+        </defs>
+        <circle class="ring-track" cx="100" cy="100" r="86"></circle>
+        <circle class="ring-fill" id="ringFill" cx="100" cy="100" r="86"></circle>
+      </svg>
+      <div class="glass" aria-hidden="true">
+        <div class="water" id="water">
+          <div class="wave wave-a"></div>
+          <div class="wave wave-b"></div>
+        </div>
+        <div class="bubbles" id="bubbles"></div>
+      </div>
+      <div class="glass-center">
+        <div class="count"><span id="cupsNow">0</span><span class="slash">/</span><span id="cupsGoal">8</span></div>
+        <div class="unit">杯</div>
+        <div class="mlLine" id="mlLine">0 / 2000 ml</div>
+      </div>
+    </div>
+
+    <div class="status" id="statusText" aria-live="polite"></div>
+
+    <div class="actions">
+      <button class="btn primary" id="drinkBtn" type="button">💧 我喝了一杯</button>
+      <button class="btn" id="undoBtn" type="button">撤销</button>
+      <button class="btn ghost" id="resetBtn" type="button">重置今天</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>提醒设置</h2>
+    <div class="row">
+      <label class="field">
+        <span>每天目标</span>
+        <select id="goalSelect">
+          <option value="6">6 杯</option>
+          <option value="7">7 杯</option>
+          <option value="8" selected>8 杯</option>
+          <option value="9">9 杯</option>
+          <option value="10">10 杯</option>
+          <option value="12">12 杯</option>
+        </select>
+      </label>
+      <label class="field">
+        <span>提醒间隔</span>
+        <select id="intervalSelect">
+          <option value="20">每 20 分钟</option>
+          <option value="30">每 30 分钟</option>
+          <option value="45" selected>每 45 分钟</option>
+          <option value="60">每 1 小时</option>
+          <option value="90">每 1.5 小时</option>
+          <option value="120">每 2 小时</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="toggles">
+      <label class="switch">
+        <input type="checkbox" id="remindToggle" checked>
+        <span>定时提醒</span>
+      </label>
+      <label class="switch">
+        <input type="checkbox" id="soundToggle" checked>
+        <span>提示音</span>
+      </label>
+    </div>
+
+    <div class="next" id="nextLine"></div>
+
+    <div class="actions" style="margin-top:14px">
+      <button class="btn ghost" id="testBtn" type="button">试一下提醒效果</button>
+      <button class="btn ghost" id="notifyBtn" type="button">开启桌面通知</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>今天的记录 <span class="muted" id="logCount"></span></h2>
+    <ol class="log" id="logList"></ol>
+    <div class="empty" id="logEmpty">还没有记录，喝第一杯试试～</div>
+  </section>
+
+  <p class="tip">小口慢饮，别一次猛灌，一次 250ml 左右最舒服。<br>页面关掉再打开，今天的记录也还在。<br>手机上：浏览器菜单里选「添加到主屏幕」，就像装了个 App。</p>
+</div>
+
+<div class="overlay" id="overlay" hidden>
+  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="dlgTitle">
+    <div class="big-drop">💧</div>
+    <h3 id="dlgTitle">该喝水啦</h3>
+    <p id="dlgText"></p>
+    <div class="actions">
+      <button class="btn primary" id="dlgDrink" type="button">我喝了</button>
+      <button class="btn ghost" id="dlgSnooze" type="button">5 分钟后再提醒</button>
+    </div>
+  </div>
+</div>
+
+<div class="petals" id="petals" aria-hidden="true"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  var KEY = "water-reminder-v1";
+  var ML_PER_CUP = 250;
+
+  function $(id){ return document.getElementById(id); }
+
+  function todayKey(){
+    var d = new Date();
+    return d.getFullYear() + "-" +
+      String(d.getMonth() + 1).padStart(2, "0") + "-" +
+      String(d.getDate()).padStart(2, "0");
+  }
+
+  function defaults(){
+    return {
+      date: todayKey(),
+      cups: 0,
+      goal: 8,
+      interval: 45,
+      remindOn: true,
+      soundOn: true,
+      log: [],
+      nextAt: null
+    };
+  }
+
+  function load(){
+    var base = defaults();
+    try{
+      var raw = localStorage.getItem(KEY);
+      if(!raw) return base;
+      var saved = JSON.parse(raw) || {};
+      var s = Object.assign(base, saved);
+      if(s.date !== todayKey()){
+        s.date = todayKey();
+        s.cups = 0;
+        s.log = [];
+        s.nextAt = null;
+      }
+      if(!Array.isArray(s.log)) s.log = [];
+      return s;
+    }catch(e){
+      return base;
+    }
+  }
+
+  var state = load();
+
+  function save(){
+    try{ localStorage.setItem(KEY, JSON.stringify(state)); }catch(e){}
+  }
+
+  var messages = [
+    "起来接杯水，顺便活动一下肩膀～",
+    "嘴巴干了吧？小口喝几口，身体会感谢你。",
+    "眼睛也累了，喝完水看看远处吧。",
+    "皮肤水嫩嫩的秘诀，就是现在这一杯。",
+    "喝口水，再回来继续加油。",
+    "别等渴了才喝，现在正好。"
+  ];
+
+  function fmtTime(ts){
+    var d = new Date(ts);
+    return String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
+  }
+
+  function greeting(){
+    var h = new Date().getHours();
+    if(h < 6) return "夜深了，喝口水早点休息";
+    if(h < 11) return "早上好，先喝一杯水";
+    if(h < 14) return "中午好，别忘了喝水";
+    if(h < 18) return "下午好，来杯水提提神";
+    if(h < 22) return "晚上好，慢慢喝一杯";
+    return "夜深了，喝口水早点休息";
+  }
+
+  var weekdays = ["星期日","星期一","星期二","星期三","星期四","星期五","星期六"];
+
+  function ensureNextAt(force){
+    if(!state.remindOn){ state.nextAt = null; return; }
+    if(force || !state.nextAt){ state.nextAt = Date.now() + state.interval * 60000; }
+  }
+
+  function renderBubbles(){
+    var box = $("bubbles");
+    if(box.childElementCount) return;
+    for(var i = 0; i < 7; i++){
+      var b = document.createElement("i");
+      b.style.left = (8 + i * 12 + Math.random() * 6) + "%";
+      b.style.animationDuration = (5 + Math.random() * 4).toFixed(1) + "s";
+      b.style.animationDelay = (Math.random() * 5).toFixed(1) + "s";
+      b.style.width = b.style.height = (5 + Math.round(Math.random() * 6)) + "px";
+      box.appendChild(b);
+    }
+  }
+
+  function render(){
+    var pct = Math.min(1, state.goal > 0 ? state.cups / state.goal : 0);
+
+    $("cupsNow").textContent = state.cups;
+    $("cupsGoal").textContent = state.goal;
+    $("mlLine").textContent = (state.cups * ML_PER_CUP) + " / " + (state.goal * ML_PER_CUP) + " ml";
+    $("ringFill").style.strokeDashoffset = String(540.4 * (1 - pct));
+    $("water").style.height = (pct * 100) + "%";
+
+    var status = $("statusText");
+    var left = state.goal - state.cups;
+    if(state.cups === 0){
+      status.textContent = "今天还没喝，先来一杯嘛～";
+      status.className = "status";
+    }else if(left > 0){
+      status.textContent = "已喝 " + state.cups + " 杯，还差 " + left + " 杯就达标啦";
+      status.className = "status";
+    }else{
+      status.textContent = "🎉 今天的目标完成啦，真棒！";
+      status.className = "status win";
+    }
+
+    var list = $("logList");
+    list.innerHTML = "";
+    for(var i = state.log.length - 1; i >= 0; i--){
+      var item = state.log[i];
+      var li = document.createElement("li");
+      var drop = document.createElement("span");
+      drop.className = "drop";
+      drop.textContent = "💧";
+      var who = document.createElement("span");
+      who.textContent = "第 " + (i + 1) + " 杯";
+      var when = document.createElement("span");
+      when.className = "when";
+      when.textContent = fmtTime(item);
+      li.appendChild(drop);
+      li.appendChild(who);
+      li.appendChild(when);
+      list.appendChild(li);
+    }
+    $("logEmpty").hidden = state.log.length > 0;
+    $("logCount").textContent = state.log.length > 0 ? "共 " + state.log.length + " 杯" : "";
+
+    $("goalSelect").value = String(state.goal);
+    $("intervalSelect").value = String(state.interval);
+    $("remindToggle").checked = state.remindOn;
+    $("soundToggle").checked = state.soundOn;
+
+    $("greeting").innerHTML = greeting() + ' <span class="wave-hand">🌷</span>';
+    var d = new Date();
+    $("todayLine").textContent = (d.getMonth() + 1) + " 月 " + d.getDate() + " 日 · " + weekdays[d.getDay()];
+
+    renderNext();
+  }
+
+  function renderNext(){
+    var el = $("nextLine");
+    if(!state.remindOn){
+      el.textContent = "定时提醒已关闭";
+      return;
+    }
+    ensureNextAt(false);
+    var mins = Math.max(0, Math.ceil((state.nextAt - Date.now()) / 60000));
+    el.textContent = "下次提醒：约 " + mins + " 分钟后（" + fmtTime(state.nextAt) + "）";
+  }
+
+  function addCup(){
+    state.cups += 1;
+    state.log.push(Date.now());
+    state.date = todayKey();
+    if(state.remindOn) state.nextAt = Date.now() + state.interval * 60000;
+    save();
+    render();
+    if(state.cups === state.goal) celebrate();
+  }
+
+  function undo(){
+    if(state.log.length === 0) return;
+    state.log.pop();
+    if(state.cups > 0) state.cups -= 1;
+    save();
+    render();
+  }
+
+  function resetToday(){
+    state.cups = 0;
+    state.log = [];
+    state.date = todayKey();
+    save();
+    render();
+  }
+
+  var audioCtx = null;
+  function playChime(){
+    if(!state.soundOn) return;
+    try{
+      var Ctx = window.AudioContext || window.webkitAudioContext;
+      if(!Ctx) return;
+      if(!audioCtx) audioCtx = new Ctx();
+      if(audioCtx.state === "suspended") audioCtx.resume();
+      var now = audioCtx.currentTime;
+      [[880, 0], [1174.7, 0.16]].forEach(function(pair){
+        var osc = audioCtx.createOscillator();
+        var gain = audioCtx.createGain();
+        osc.type = "sine";
+        osc.frequency.value = pair[0];
+        gain.gain.setValueAtTime(0, now + pair[1]);
+        gain.gain.linearRampToValueAtTime(0.16, now + pair[1] + 0.03);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + pair[1] + 0.55);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now + pair[1]);
+        osc.stop(now + pair[1] + 0.6);
+      });
+    }catch(e){}
+  }
+
+  function systemNotify(title, body){
+    try{
+      if(typeof Notification === "undefined") return;
+      if(Notification.permission !== "granted") return;
+      new Notification(title, { body: body });
+    }catch(e){}
+  }
+
+  var titleFlashTimer = null;
+  function flashTitle(){
+    if(!document.hidden) return;
+    var original = document.title;
+    document.title = "💧 该喝水啦";
+    clearTimeout(titleFlashTimer);
+    titleFlashTimer = setTimeout(function(){ document.title = original; }, 15000);
+  }
+
+  function showReminder(fromTest){
+    var text = messages[Math.floor(Math.random() * messages.length)];
+    $("dlgText").textContent = text;
+    $("overlay").hidden = false;
+    $("dlgDrink").focus();
+    playChime();
+    systemNotify("该喝水啦 💧", text);
+    flashTitle();
+    if(!fromTest && state.remindOn) state.nextAt = Date.now() + state.interval * 60000;
+    save();
+    renderNext();
+  }
+
+  function hideReminder(){
+    $("overlay").hidden = true;
+    if(titleFlashTimer){ clearTimeout(titleFlashTimer); document.title = "喝水小助手"; }
+  }
+
+  function celebrate(){
+    var box = $("petals");
+    var icons = ["🌸","💗","✨","🌷","💧"];
+    for(var i = 0; i < 18; i++){
+      var s = document.createElement("span");
+      s.textContent = icons[i % icons.length];
+      s.style.left = (Math.random() * 96) + "%";
+      s.style.animationDuration = (2.4 + Math.random() * 1.8).toFixed(1) + "s";
+      s.style.animationDelay = (Math.random() * 0.8).toFixed(1) + "s";
+      s.style.fontSize = (14 + Math.round(Math.random() * 10)) + "px";
+      box.appendChild(s);
+      (function(node){
+        setTimeout(function(){ if(node.parentNode) node.parentNode.removeChild(node); }, 5200);
+      })(s);
+    }
+  }
+
+  function requestNotify(){
+    var btn = $("notifyBtn");
+    if(typeof Notification === "undefined"){
+      btn.textContent = "这个浏览器不支持桌面通知";
+      return;
+    }
+    if(Notification.permission === "granted"){
+      btn.textContent = "桌面通知已开启 ✅";
+      return;
+    }
+    Notification.requestPermission().then(function(p){
+      btn.textContent = p === "granted" ? "桌面通知已开启 ✅" : "没拿到通知权限，页面内提醒照常用";
+    }).catch(function(){
+      btn.textContent = "没拿到通知权限，页面内提醒照常用";
+    });
+  }
+
+  $("drinkBtn").addEventListener("click", function(){ addCup(); });
+  $("undoBtn").addEventListener("click", undo);
+  $("resetBtn").addEventListener("click", resetToday);
+  $("dlgDrink").addEventListener("click", function(){ hideReminder(); addCup(); });
+  $("dlgSnooze").addEventListener("click", function(){
+    hideReminder();
+    state.nextAt = Date.now() + 5 * 60000;
+    save();
+    renderNext();
+  });
+  $("testBtn").addEventListener("click", function(){ showReminder(true); });
+  $("notifyBtn").addEventListener("click", requestNotify);
+
+  $("goalSelect").addEventListener("change", function(){
+    state.goal = parseInt(this.value, 10) || 8;
+    save();
+    render();
+  });
+  $("intervalSelect").addEventListener("change", function(){
+    state.interval = parseInt(this.value, 10) || 45;
+    ensureNextAt(true);
+    save();
+    render();
+  });
+  $("remindToggle").addEventListener("change", function(){
+    state.remindOn = this.checked;
+    ensureNextAt(true);
+    save();
+    render();
+  });
+  $("soundToggle").addEventListener("change", function(){
+    state.soundOn = this.checked;
+    save();
+    if(state.soundOn) playChime();
+  });
+
+  document.addEventListener("keydown", function(e){
+    if(e.key === "Escape" && !$("overlay").hidden) hideReminder();
+  });
+
+  document.addEventListener("visibilitychange", function(){
+    if(!document.hidden) renderNext();
+  });
+
+  setInterval(function(){
+    renderNext();
+    if(state.remindOn && state.nextAt && Date.now() >= state.nextAt){
+      showReminder(false);
+    }
+  }, 1000);
+
+  if(state.remindOn && (!state.nextAt || state.nextAt < Date.now())){
+    state.nextAt = Date.now() + state.interval * 60000;
+  }
+  save();
+  renderBubbles();
+  render();
+})();
+</script>
+</body>
+</html>
